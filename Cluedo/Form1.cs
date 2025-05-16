@@ -23,14 +23,22 @@ namespace Cluedo
         private int remainingSteps = 0;
         private bool canMove = true;
         private Timer moveTimer;
+        
 
         private int[,] map;
         private List<Player> players = new List<Player>();
         private int currentPlayerIndex = 0;
         private Random random = new Random();
-        public Form1()
+        private int numberOfPlayers;
+        private Dictionary<int, notepad> playerNotepads = new Dictionary<int, notepad>();
+        private Dictionary<int, Dictionary<string, bool>> notepadStates = new Dictionary<int, Dictionary<string, bool>>();
+        public Form1(int playerCount)
         {
+            numberOfPlayers = playerCount;
             InitializeComponent();
+            this.KeyPreview = true;
+            this.KeyDown += Form1_KeyDown;
+           
             moveTimer = new Timer();
             moveTimer.Interval = 150;
             moveTimer.Tick += (s, e) =>
@@ -38,14 +46,13 @@ namespace Cluedo
                 canMove = true;
                 moveTimer.Stop();
             };
-            this.KeyPreview = true;
-            this.KeyDown += Form1_KeyDown;
+          
 
             InitializeMap();
             InitializePlayer();
             SetupUI();
             roomsPic.PreviewKeyDown += RoomsPic_PreviewKeyDown;
-            roomsPic.TabStop = true; // важно: делает элемент доступным для фокуса
+            roomsPic.TabStop = true; 
             roomsPic.Focus();
             RegisterCharacterIcon(pictureRose);
             RegisterCharacterIcon(pictureBrown);
@@ -142,14 +149,25 @@ namespace Cluedo
 
         private void InitializePlayer()
         {
-            players.Clear();
-            players.Add(new Player { Name = "Mille Rose", Pic = playerPic1, X = 10, Y = 25 });
-            players.Add(new Player { Name = "Mr.Murphy", Pic = playerPic2, X = 15, Y = 25 });
-            players.Add(new Player { Name = "Miss Grey", Pic = playerPic3, X = 1, Y = 19 });
-            players.Add(new Player { Name = "Mr.Brown", Pic = playerPic4, X = 24, Y = 8 });
-            players.Add(new Player { Name = "Mille Taylor", Pic = playerPic5, X = 1, Y = 6 });
-            players.Add(new Player { Name = "Dr.Jones", Pic = playerPic6, X = 17, Y = 1 });
-
+            List<(string name, PictureBox pic, int x, int y)> allPlayers = new List<(string, PictureBox, int, int)>
+    {
+               ("Mille Rose", playerPic1, 10, 25),
+               ("Mr.Murphy", playerPic2, 15, 25),
+               ("Miss Grey", playerPic3, 1, 19),
+               ("Mr.Brown", playerPic4, 24, 8),
+               ("Mille Taylor", playerPic5, 1, 6),
+               ("Dr.Jones", playerPic6, 17, 1)
+    };
+            for(int i = 0; i < numberOfPlayers; i++)
+            {
+                var (name, pic, x, y) = allPlayers[i];
+                players.Add(new Player { Name = name, Pic = pic, X = x, Y = y });
+            }
+            for(int i = 0; i < numberOfPlayers; i++)
+            {
+                playerNotepads[i] = new notepad($"Player{i + 1}");
+                notepadStates[i] = new Dictionary<string, bool>();
+            }
             foreach (var p in players)
             {
                 p.Pic.Parent = roomsPic;
@@ -160,6 +178,13 @@ namespace Cluedo
                 p.Pic.BringToFront();
                 UpdatePlayerPosition(p);
             }
+            List<PictureBox> allPics = new List<PictureBox> { playerPic1, playerPic2, playerPic3, playerPic4, playerPic5, playerPic6 };
+
+            for (int i = numberOfPlayers; i < allPics.Count; i++)
+            {
+                allPics[i].Visible = false;
+            }
+
         }
         private void InitializeMap()
         {
@@ -226,14 +251,14 @@ namespace Cluedo
             if (newX < 0 || newX >= gridWidth || newY < 0 || newY >= gridHeight)
                 return;
 
-            if (map[newY, newX] == 0)
+            if (map[newY, newX] == 0 || map[newY, newX] == 2)
             {
                 current.X = newX;
                 current.Y = newY;
                 UpdatePlayerPosition(current);
                 remainingSteps--;
             }
-          }
+        }
         private void SetupUI()
         {
             Button btnRoll = new Button
@@ -271,10 +296,45 @@ namespace Cluedo
 
         private void btnNext_Click(object sender, EventArgs e)
         {
+            if (playerNotepads.ContainsKey(currentPlayerIndex) && playerNotepads[currentPlayerIndex] != null)
+            {
+                try
+                {
+                    notepadStates[currentPlayerIndex] = playerNotepads[currentPlayerIndex].GetCheckedState();
+                    playerNotepads[currentPlayerIndex].Hide();
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Ошибка при сохранении блокнота игрока {currentPlayerIndex}: {ex.Message}");
+                }
+            }
+
+            // Moving on to the next player
             currentPlayerIndex = (currentPlayerIndex + 1) % players.Count;
-            
             remainingSteps = 0;
-           
+
+            // Restore the new player's notebook
+            if (playerNotepads.ContainsKey(currentPlayerIndex) && playerNotepads[currentPlayerIndex] != null)
+            {
+                var notepad = playerNotepads[currentPlayerIndex];
+
+                try
+                {
+                    if (notepadStates.ContainsKey(currentPlayerIndex))
+                    {
+                        notepad.RestoreCheckedState(notepadStates[currentPlayerIndex]);
+                    }
+                    notepad.Show();
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Error when restoring player's notebook {currentPlayerIndex}: {ex.Message}");
+                }
+            }
+            else
+            {
+                MessageBox.Show($"Player's notebook {currentPlayerIndex} не найден.");
+            }
 
             this.ActiveControl = null;
             roomsPic.Focus();
@@ -284,8 +344,16 @@ namespace Cluedo
 
         private void btnNode_Click(object sender, EventArgs e)
         {
-            notePad = new notepad();
-            notePad.Show();
+            if (playerNotepads[currentPlayerIndex] != null)
+                notepadStates[currentPlayerIndex] = playerNotepads[currentPlayerIndex].GetCheckedState();
+
+            
+            var notepad = playerNotepads[currentPlayerIndex];
+
+            if (notepadStates[currentPlayerIndex] != null)
+                notepad.RestoreCheckedState(notepadStates[currentPlayerIndex]);
+
+            notepad.Show(); 
         }
     }
 }

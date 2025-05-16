@@ -14,9 +14,14 @@ namespace Cluedo
         [STAThread]
         static void Main()
         {
-            Application.EnableVisualStyles();
-            Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new Form1());
+            using (var playerCountForm = new PlayerCountForm())
+            {
+                if (playerCountForm.ShowDialog() == DialogResult.OK)
+                {
+                    int count = playerCountForm.PlayerCount;
+                    Application.Run(new Form1(count));
+                }
+            }
         }
     }
 }

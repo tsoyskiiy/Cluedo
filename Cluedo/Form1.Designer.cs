@@ -272,11 +272,10 @@
             // lblSteps
             // 
             this.lblSteps.AutoSize = true;
-            this.lblSteps.Location = new System.Drawing.Point(624, 330);
+            this.lblSteps.Location = new System.Drawing.Point(617, 328);
             this.lblSteps.Name = "lblSteps";
-            this.lblSteps.Size = new System.Drawing.Size(32, 12);
+            this.lblSteps.Size = new System.Drawing.Size(0, 12);
             this.lblSteps.TabIndex = 22;
-            this.lblSteps.Text = "label";
             // 
             // btnNode
             // 
@@ -294,7 +293,7 @@
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.SystemColors.HighlightText;
-            this.ClientSize = new System.Drawing.Size(1483, 600);
+            this.ClientSize = new System.Drawing.Size(1166, 600);
             this.Controls.Add(this.btnNode);
             this.Controls.Add(this.lblSteps);
             this.Controls.Add(this.btnNext);
